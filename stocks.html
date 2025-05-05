@@ -1,0 +1,70 @@
+<!-- stocks.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stocks</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
+</head>
+<body>
+  <nav>
+    <ul>
+      <li onclick="location.href='index.html'">Home</li>
+      <li onclick="location.href='stocks.html'">Stocks</li>
+      <li onclick="location.href='dogs.html'">Dogs</li>
+    </ul>
+  </nav>
+
+  <main>
+    <h1>Stocks</h1>
+    <input id="ticker" placeholder="Ticker (e.g. AAPL)" />
+    <select id="days">
+      <option>30</option><option>60</option><option>90</option>
+    </select>
+    <button onclick="fetchStockData()">Chart</button>
+    <canvas id="stockChart"></canvas>
+
+    <h2>Reddit Top 5</h2>
+    <table><tbody id="redditTable"></tbody></table>
+  </main>
+
+  <section>
+    <p>Say "Hello" / "Change the color to red" / "Navigate to Dogs" / "Lookup MSFT"</p>
+    <button onclick="annyang.start()">Audio On</button>
+    <button onclick="annyang.abort()">Audio Off</button>
+  </section>
+
+  <script>
+    async function fetchStockData() {
+      const t = ticker.value.toUpperCase();
+      const d = +days.value;
+      const end = Math.floor(Date.now()/1000);
+      const start = end - d*86400;
+      const url = `https://api.polygon.io/v2/aggs/ticker/${t}/range/1/day/${start}/${end}?adjusted=true&sort=asc&limit=120&apiKey=pIxFhHpKnQeNQIUh6_1DTVGiBxdxtegY`;
+      const r = await fetch(url).then(r=>r.json());
+      const labels = r.results.map(pt=>new Date(pt.t).toLocaleDateString());
+      const data = r.results.map(pt=>pt.c);
+      new Chart(stockChart, { type:'line', data:{ labels, datasets:[{label:t, data}] } });
+    }
+
+    fetch('https://tradestie.com/api/v1/apps/reddit?date=2022-04-03')
+      .then(r=>r.json()).then(d=>{
+        redditTable.innerHTML = d.slice(0,5).map(s=>
+          `<tr><td><a href="https://finance.yahoo.com/quote/${s.ticker}" target="_blank">${s.ticker}</a></td><td>${s.no_of_comments}</td><td>${s.sentiment} ${s.sentiment==='Bullish'?'📈':'📉'}</td></tr>`
+        ).join('');
+      });
+
+    if (annyang) {
+      annyang.addCommands({
+        'hello': ()=>alert('Hello World'),
+        'change the color to *c': c=>document.body.style.background=c,
+        'navigate to *p': p=>location.href=`${p.toLowerCase()}.html`,
+        'lookup *t': t=>{ ticker.value = t.toUpperCase(); days.value = '30'; fetchStockData(); }
+      });
+    }
+  </script>
+</body>
+</html>

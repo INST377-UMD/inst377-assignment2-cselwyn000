@@ -1,0 +1,71 @@
+<!-- dogs.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dogs</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/simple-slider/js/simple-slider.min.js"></script>
+</head>
+<body>
+  <nav>
+    <ul>
+      <li onclick="location.href='index.html'">Home</li>
+      <li onclick="location.href='stocks.html'">Stocks</li>
+      <li onclick="location.href='dogs.html'">Dogs</li>
+    </ul>
+  </nav>
+
+  <h1>Dogs</h1>
+  <div id="carousel" class="slider"></div>
+  <div id="breeds"></div>
+  <div id="info"></div>
+
+  <section>
+    <p>Say "Hello" / "Change the color to red" / "Navigate to Stocks" / "Load Dog Breed hound"</p>
+    <button onclick="annyang.start()">Audio On</button>
+    <button onclick="annyang.abort()">Audio Off</button>
+  </section>
+
+  <script>
+    fetch('https://dog.ceo/api/breeds/image/random/10')
+      .then(r=>r.json())
+      .then(d=>{
+        carousel.innerHTML = d.message.map(u=>`<img src="${u}" width=150>`).join('');
+        new SimpleSlider('.slider', { autoPlay: true, delay: 2 });
+      });
+
+    fetch('https://api.thedogapi.com/v1/breeds')
+      .then(r=>r.json())
+      .then(d=>{
+        d.forEach(b=>{
+          const btn = document.createElement('button');
+          btn.textContent = b.name;
+          btn.onclick = ()=> showBreed(b);
+          breeds.appendChild(btn);
+        });
+        window.breedsList = d;
+      });
+
+    function showBreed(b) {
+      const description = b.description || b.temperament || 'No description available';
+      const life = b.life_span ? `Life: ${b.life_span}` : '';
+      info.innerHTML = `<h3>${b.name}</h3><p>${description}<br>${life}</p>`;
+    }
+
+    if (annyang) {
+      annyang.addCommands({
+        'hello': ()=>alert('Hello World'),
+        'change the color to *c': c=>document.body.style.background=c,
+        'navigate to *p': p=>location.href=`${p.toLowerCase()}.html`,
+        'load dog breed *n': n=>{
+          const b = breedsList.find(x=>x.name.toLowerCase()===n.toLowerCase());
+          if(b) showBreed(b);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
